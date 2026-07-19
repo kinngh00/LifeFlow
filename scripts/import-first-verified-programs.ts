@@ -6,9 +6,9 @@ import { publishProgramVersion } from "@/features/admin/programs/services/publis
 import { runProgramVersionTests } from "@/features/admin/programs/services/run-program-version-tests";
 import { updateDraftProgramConfiguration } from "@/features/admin/programs/services/update-draft-program-configuration";
 import { createDatabaseClient } from "@/server/db/create-database-client";
-import { firstVerifiedPrograms } from "./data/first-verified-programs";
+import { firstVerifiedPrograms, type VerifiedProgramDefinition } from "./data/first-verified-programs";
 
-export async function importFirstVerifiedPrograms(options: {
+export async function importVerifiedProgramBatch(definitions: VerifiedProgramDefinition[], options: {
   databaseUrl: string;
   adminEmail: string;
   publish: boolean;
@@ -19,7 +19,7 @@ export async function importFirstVerifiedPrograms(options: {
     const admin = await database.adminUser.findUnique({ where: { email: options.adminEmail.toLowerCase() }, select: { id: true, active: true } });
     if (!admin?.active) throw new Error("지정한 활성 ADMIN 계정을 찾을 수 없습니다.");
 
-    for (const definition of firstVerifiedPrograms) {
+    for (const definition of definitions) {
       const existing = await database.supportProgram.findUnique({
         where: { slug: definition.create.program.slug },
         select: { id: true, currentPublishedVersionId: true, versions: { orderBy: { versionNumber: "desc" }, take: 1, select: { id: true, publicationStatus: true } } },
@@ -45,6 +45,14 @@ export async function importFirstVerifiedPrograms(options: {
   } finally {
     await database.$disconnect();
   }
+}
+
+export function importFirstVerifiedPrograms(options: {
+  databaseUrl: string;
+  adminEmail: string;
+  publish: boolean;
+}) {
+  return importVerifiedProgramBatch(firstVerifiedPrograms, options);
 }
 
 async function main() {

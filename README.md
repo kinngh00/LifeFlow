@@ -162,7 +162,7 @@ E2E도 같은 안전 조건을 확인하고, 적용된 Prisma 마이그레이션
 
 ### 표준 PostgreSQL 검증 결과
 
-2026-07-19 기준, loopback 전용 PostgreSQL 18 테스트 DB에서 누적 마이그레이션 3개, 단위 테스트 199건, 통합 테스트 172건과 Playwright E2E 12건을 통과했습니다. GitHub Actions에서도 PostgreSQL service, migration, lint, typecheck, 단위·통합 테스트, production build와 Chromium E2E가 모두 통과했습니다.
+2026-07-19 기준, loopback 전용 PostgreSQL 18 테스트 DB에서 누적 마이그레이션 3개, 단위 테스트 201건, 통합 테스트 173건과 Playwright E2E 12건을 통과했습니다. GitHub Actions에서도 PostgreSQL service, migration, lint, typecheck, 단위·통합 테스트, production build와 Chromium E2E가 모두 통과했습니다.
 
 ## 검증 명령
 
@@ -200,6 +200,7 @@ Playwright 브라우저가 설치되지 않은 환경에서는 최초 한 번 `n
 - 공식 데이터가 없는 더미 지원제도를 실제 데이터처럼 노출하지 않습니다.
 - 검수 데이터 입력은 기존 활성 ADMIN 이메일을 `LIFEFLOW_DATA_ADMIN_EMAIL`로 지정한 뒤 `npm run data:import:first`로 DRAFT·테스트·readiness까지만 수행합니다. 게시까지 진행할 때만 명시적으로 `-- --publish`를 붙입니다.
 - 2026-07-19 첫 검수 배치 5개는 로컬 개발 PostgreSQL에서 각 5건의 규칙 테스트와 readiness를 통과해 게시됐습니다. 이는 개발 DB 검증 결과이며 운영 배포를 의미하지 않습니다.
+- 같은 날 두 번째 검수 배치 5개도 동일 절차를 통과했습니다. 개발 DB의 공개 지원제도는 총 10개이며 각 제도에 5개 이상의 필수 규칙 테스트가 연결되어 있습니다.
 - 사용자 결과 상태는 `ELIGIBLE`, `NEEDS_REVIEW`, `NOT_ELIGIBLE`, `UNDETERMINED`만 사용합니다.
 - 지원제도 생성 시 현재 게시 버전은 비어 있으며 최초 버전은 항상 DRAFT입니다.
 - 게시된 버전은 직접 편집하지 않고 새 DRAFT를 생성해 다시 테스트하고 게시합니다.

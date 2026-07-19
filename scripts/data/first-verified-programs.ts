@@ -9,10 +9,10 @@ export type VerifiedProgramDefinition = {
   publicationReason: string;
 };
 
-const checkedAt = "2026-07-19";
+export const checkedAt = "2026-07-19";
 const sourceReference = { sourceIndex: 0 } as const;
 
-function rule(
+export function rule(
   displayOrder: number,
   ruleType: "AGE" | "REGION" | "EMPLOYMENT" | "STUDENT" | "HOUSING" | "MANUAL_REVIEW",
   label: string,
@@ -38,7 +38,7 @@ function rule(
   };
 }
 
-function outcomes(values: Array<"PASS" | "FAIL" | "UNKNOWN">) {
+export function outcomes(values: Array<"PASS" | "FAIL" | "UNKNOWN">) {
   return values.map((outcome, index) => ({ displayOrder: index + 1, outcome }));
 }
 
