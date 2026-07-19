@@ -16,6 +16,7 @@
     "admin:create": "tsx scripts/admin-create.ts",
     "data:import:first": "node --conditions=react-server --import tsx scripts/import-first-verified-programs.ts",
     "data:import:second": "node --conditions=react-server --import tsx scripts/import-second-verified-programs.ts",
+    "data:import:third": "node --conditions=react-server --import tsx scripts/import-third-verified-programs.ts",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:studio": "prisma studio",

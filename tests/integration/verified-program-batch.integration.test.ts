@@ -1,13 +1,17 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { importVerifiedProgramBatch } from "../../scripts/import-first-verified-programs";
 import { secondVerifiedPrograms } from "../../scripts/data/second-verified-programs";
+import { thirdVerifiedPrograms } from "../../scripts/data/third-verified-programs";
 import { disconnectTestDatabase, getTestDatabase, uniqueTestValue } from "./helpers/database";
 import { IntegrationTestScope } from "./helpers/test-scope";
 
 const database = getTestDatabase();
 let scope: IntegrationTestScope;
 
-describe("verified program batch import", () => {
+describe.each([
+  ["second", secondVerifiedPrograms],
+  ["third", thirdVerifiedPrograms],
+] as const)("%s verified program batch import", (_batchName, verifiedPrograms) => {
   beforeEach(() => { scope = new IntegrationTestScope(database); });
   afterEach(async () => scope.cleanup());
   afterAll(disconnectTestDatabase);
@@ -15,7 +19,7 @@ describe("verified program batch import", () => {
   it("publishes all five definitions only after tests and readiness pass", async () => {
     const admin = await scope.createAdmin();
     const suffix = uniqueTestValue("batch").slice(-20);
-    const definitions = secondVerifiedPrograms.map((definition) => ({
+    const definitions = verifiedPrograms.map((definition) => ({
       ...definition,
       create: {
         ...definition.create,
