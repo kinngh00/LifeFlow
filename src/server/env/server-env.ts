@@ -8,6 +8,7 @@ const serverEnvSchema = z.object({
   DIRECT_URL: z.string().min(1).optional(),
   TEST_DATABASE_URL: z.string().min(1).optional(),
   APP_ORIGIN: z.url().optional(),
+  USER_SESSION_ENCRYPTION_KEY: z.string().min(1).optional(),
 });
 
 export function getServerEnv() {
@@ -16,6 +17,7 @@ export function getServerEnv() {
     DIRECT_URL: process.env.DIRECT_URL,
     TEST_DATABASE_URL: process.env.TEST_DATABASE_URL,
     APP_ORIGIN: process.env.APP_ORIGIN,
+    USER_SESSION_ENCRYPTION_KEY: process.env.USER_SESSION_ENCRYPTION_KEY,
   });
 
   if (!result.success) {

@@ -81,12 +81,23 @@ function evaluateRule(
     }
     case "REGION": {
       const condition = regionConditionSchema.parse(rule.expectedCondition);
+      if (condition.coverage === "NATIONAL") {
+        return result(
+          rule,
+          "PASS",
+          "NATIONAL_REGION_ALLOWED",
+          isUnknown(input.residenceCityCode) ? null : input.residenceCityCode,
+          condition,
+        );
+      }
       if (isUnknown(input.residenceCityCode)) return missing(rule, condition);
       if (input.residenceCityCode !== condition.cityCode) return result(rule, "FAIL", "CITY_NOT_ALLOWED", input.residenceCityCode, condition);
       if (rule.reviewRequired) return result(rule, "UNKNOWN", "REGION_REVIEW_REQUIRED", input.residenceCityCode, condition);
       if (condition.coverage === "CITY_WIDE") return result(rule, "PASS", "CITY_ALLOWED", input.residenceCityCode, condition);
       if (isUnknown(input.residenceDistrictCode)) return missing(rule, condition);
-      const passed = condition.allowedDistrictCodes!.includes(input.residenceDistrictCode);
+      const passed = condition.allowedDistrictCodes.some(
+        (districtCode) => districtCode === input.residenceDistrictCode,
+      );
       return result(rule, passed ? "PASS" : "FAIL", passed ? "DISTRICT_ALLOWED" : "DISTRICT_NOT_ALLOWED", input.residenceDistrictCode, condition);
     }
     case "EMPLOYMENT": {

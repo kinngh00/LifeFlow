@@ -1,8 +1,11 @@
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL ?? "";
 const appOrigin = "http://127.0.0.1:41731";
+const userSessionEncryptionKey =
+  process.env.USER_SESSION_ENCRYPTION_KEY ?? randomBytes(32).toString("base64");
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -32,6 +35,7 @@ export default defineConfig({
       DIRECT_URL: testDatabaseUrl,
       TEST_DATABASE_URL: testDatabaseUrl,
       APP_ORIGIN: appOrigin,
+      USER_SESSION_ENCRYPTION_KEY: userSessionEncryptionKey,
     },
     reuseExistingServer: false,
     timeout: 120_000,

@@ -28,7 +28,7 @@ export default function HomePage() {
             <span className="block text-brand">근거와 함께 찾으세요.</span>
           </h1>
           <p className="mt-7 max-w-2xl text-lg leading-8 text-muted">
-            LifeFlow는 공식 조건을 바탕으로 부산광역시 청년 취업·주거 지원제도를 찾아보는 서비스입니다. 현재는 서비스 기반을 준비하고 있습니다.
+            LifeFlow는 공식 조건을 바탕으로 부산광역시 청년 취업·주거 지원제도를 찾아보는 서비스입니다. 이름이나 연락처 없이 사전 자격을 점검할 수 있습니다.
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link className="rounded-xl bg-brand px-6 py-3.5 text-center font-semibold text-white transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" href="/questionnaire">
@@ -44,9 +44,9 @@ export default function HomePage() {
           <div className="flex items-center justify-between border-b border-line pb-5">
             <div>
               <p className="text-sm font-semibold text-brand">MVP 준비 상태</p>
-              <p className="mt-1 text-2xl font-bold">서비스 골격 구성</p>
+              <p className="mt-1 text-2xl font-bold">맞춤 지원 사전 점검</p>
             </div>
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">초기 단계</span>
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">MVP</span>
           </div>
           <div className="mt-6 space-y-4">
             {principles.map((principle, index) => (

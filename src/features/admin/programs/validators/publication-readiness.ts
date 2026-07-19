@@ -4,6 +4,7 @@ import type {
   PublicationReadinessCheckCode,
   PublicationReadinessResult,
 } from "../types/program-test-run.types";
+import { hasValidProgramRegions } from "./draft-program-configuration.validator";
 
 export type PublicationReadinessRecord = ProgramTestConfigurationRecord & {
   ruleTestRuns: Array<{
@@ -42,6 +43,7 @@ export function buildProgramVersionPublicationReadiness(
     ["PRIMARY_SOURCE_PRESENT", primarySources.length === 1, "대표 공식 출처가 정확히 1개 등록되어 있습니다."],
     ["SOURCE_PRESENT", version.sources.length > 0, "공식 출처가 등록되어 있습니다."],
     ["REGION_PRESENT", version.regions.length > 0, "적용 지역이 등록되어 있습니다."],
+    ["REGION_CONFIGURATION_VALID", hasValidProgramRegions(version.regions), "신청자 거주지 적용 범위가 올바르게 구성되어 있습니다."],
     ["REQUIRED_RULE_PRESENT", activeRequiredRules.length > 0, "활성 필수 규칙이 등록되어 있습니다."],
     ["RULE_SOURCES_VALID", version.eligibilityRules.filter(({ active }) => active).every(({ source }) => Boolean(source)), "모든 활성 규칙이 출처와 연결되어 있습니다."],
     ["TEST_CASE_PRESENT", version.ruleTestCases.length > 0, "규칙 테스트 사례가 등록되어 있습니다."],

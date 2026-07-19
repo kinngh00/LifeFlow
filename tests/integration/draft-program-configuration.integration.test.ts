@@ -32,6 +32,32 @@ describe("updateDraftProgramConfiguration", () => {
   afterEach(() => scope.cleanup());
   afterAll(disconnectTestDatabase);
 
+  it("stores NATIONAL with null city and district codes", async () => {
+    const value = input();
+    value.regions = [{ coverageType: "NATIONAL", cityCode: null, districtCode: null, reviewRequired: false, requirementNote: null }];
+    await update(value);
+    expect(await database.programRegion.findFirstOrThrow({ where: { programVersionId: versionId } })).toMatchObject({
+      coverageType: "NATIONAL",
+      cityCode: null,
+      districtCode: null,
+    });
+  });
+
+  it("rejects NATIONAL combined with a Busan code at the database boundary", async () => {
+    await expect(database.programRegion.create({
+      data: { programVersionId: versionId, coverageType: "NATIONAL", cityCode: "26000", districtCode: null },
+    })).rejects.toBeTruthy();
+  });
+
+  it("rejects duplicate NATIONAL rows for one program version", async () => {
+    await database.programRegion.create({
+      data: { programVersionId: versionId, coverageType: "NATIONAL", cityCode: null, districtCode: null },
+    });
+    await expect(database.programRegion.create({
+      data: { programVersionId: versionId, coverageType: "NATIONAL", cityCode: null, districtCode: null },
+    })).rejects.toBeTruthy();
+  });
+
   it("DRAFT에 출처·지역·규칙·테스트 사례를 저장한다", async () => {
     const result = await update();
     expect(result).toMatchObject({ sourceCount: 1, regionCount: 1, ruleCount: 1, testCaseCount: 1 });
@@ -131,7 +157,7 @@ describe("updateDraftProgramConfiguration", () => {
   });
 
   it("잘못된 부산 구·군 코드를 거부한다", async () => {
-    const value = input(); value.regions = [{ cityCode: "26000", districtCode: "26999", coverageType: "DISTRICT", reviewRequired: false }];
+    const value = input(); value.regions = [{ cityCode: "26000", districtCode: "26999", coverageType: "DISTRICT", reviewRequired: false } as never];
     await expectCode(value, "VALIDATION_ERROR");
   });
 

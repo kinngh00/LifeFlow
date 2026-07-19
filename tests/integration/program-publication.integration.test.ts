@@ -52,6 +52,20 @@ describe("program publication lifecycle", () => {
   afterEach(() => scope.cleanup());
   afterAll(disconnectTestDatabase);
 
+  it("clones NATIONAL coverage without assigning Busan codes", async () => {
+    await database.programRegion.updateMany({
+      where: { programVersionId: versionId },
+      data: { coverageType: "NATIONAL", cityCode: null, districtCode: null },
+    });
+    await runProgramVersionTests({ programVersionId: versionId, executedById: adminId }, database);
+    const result = await publishAndCreateDraft();
+    expect(await database.programRegion.findFirstOrThrow({ where: { programVersionId: result.draftVersion.id } })).toMatchObject({
+      coverageType: "NATIONAL",
+      cityCode: null,
+      districtCode: null,
+    });
+  });
+
   it("1. 최초 DRAFT를 게시한다", async () => {
     expect((await publish()).publishedVersion.publicationStatus).toBe("PUBLISHED");
   });

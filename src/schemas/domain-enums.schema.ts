@@ -18,7 +18,11 @@ export const sourceTypeSchema = z.enum([
   "ATTACHMENT",
 ]);
 
-export const regionCoverageTypeSchema = z.enum(["CITY_WIDE", "DISTRICT"]);
+export const regionCoverageTypeSchema = z.enum([
+  "NATIONAL",
+  "CITY_WIDE",
+  "DISTRICT",
+]);
 
 export const ruleTypeSchema = z.enum([
   "AGE",

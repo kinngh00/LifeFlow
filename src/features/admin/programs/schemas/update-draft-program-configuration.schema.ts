@@ -11,7 +11,7 @@ import {
   studentConditionSchema,
 } from "@/schemas/eligibility-rule.schema";
 import { eligibilityStatusSchema, ruleOutcomeSchema } from "@/schemas/domain-enums.schema";
-import { commonProgramRegionShape } from "@/schemas/program-region.schema";
+import { busanDistrictCodeSchema, commonProgramRegionShape } from "@/schemas/program-region.schema";
 import { ProgramSourceCreateSchema } from "@/schemas/program-source.schema";
 import { BUSAN_CITY_CODE } from "../validators/busan-region.constants";
 
@@ -31,18 +31,25 @@ export const DraftProgramRegionInputSchema = z.discriminatedUnion(
   "coverageType",
   [
     z.object({
-      cityCode: commonProgramRegionShape.cityCode,
+      cityCode: z.null(),
+      reviewRequired: commonProgramRegionShape.reviewRequired,
+      requirementNote: commonProgramRegionShape.requirementNote,
+      coverageType: z.literal("NATIONAL"),
+      districtCode: z.null(),
+    }).strict(),
+    z.object({
+      cityCode: z.literal(BUSAN_CITY_CODE),
       reviewRequired: commonProgramRegionShape.reviewRequired,
       requirementNote: commonProgramRegionShape.requirementNote,
       coverageType: z.literal("CITY_WIDE"),
       districtCode: z.literal("ALL").default("ALL"),
     }).strict(),
     z.object({
-      cityCode: commonProgramRegionShape.cityCode,
+      cityCode: z.literal(BUSAN_CITY_CODE),
       reviewRequired: commonProgramRegionShape.reviewRequired,
       requirementNote: commonProgramRegionShape.requirementNote,
       coverageType: z.literal("DISTRICT"),
-      districtCode: z.string().regex(/^26\d{3}$/),
+      districtCode: busanDistrictCodeSchema,
     }).strict(),
   ],
 );

@@ -26,6 +26,7 @@ enum SourceType {
 }
 
 enum RegionCoverageType {
+  NATIONAL
   CITY_WIDE
   DISTRICT
 }
@@ -219,15 +220,14 @@ model ProgramSource {
 model ProgramRegion {
   id               String             @id @default(cuid())
   programVersionId String
-  cityCode         String
-  districtCode     String             @default("ALL")
+  cityCode         String?
+  districtCode     String?
   coverageType     RegionCoverageType
   reviewRequired   Boolean            @default(false)
   requirementNote  String?
 
   programVersion ProgramVersion @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
 
-  @@unique([programVersionId, cityCode, districtCode])
   @@index([cityCode, districtCode])
 }
 

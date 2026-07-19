@@ -92,7 +92,6 @@ export function canonicalizeConfiguration(value: unknown): CanonicalValue {
 
 export function buildProgramConfigurationSnapshot(record: ProgramConfigurationRecord) {
   return canonicalizeConfiguration({
-    programVersionId: record.id,
     amountType: record.amountType,
     minimumAmount: record.minimumAmount,
     maximumAmount: record.maximumAmount,
@@ -101,7 +100,13 @@ export function buildProgramConfigurationSnapshot(record: ProgramConfigurationRe
     applicationEndDate: record.applicationEndDate,
     checkedAt: record.checkedAt,
     sources: record.sources,
-    regions: record.regions,
+    regions: record.regions.map((region) => ({
+      coverageType: region.coverageType,
+      cityCode: region.cityCode ?? null,
+      districtCode: region.districtCode ?? null,
+      reviewRequired: region.reviewRequired,
+      requirementNote: region.requirementNote ?? null,
+    })),
     activeRules: record.eligibilityRules.filter(({ active }) => active),
     testCases: record.ruleTestCases,
   });

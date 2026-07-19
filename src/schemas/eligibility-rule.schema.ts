@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ruleOutcomeSchema } from "./domain-enums.schema";
+import { busanDistrictCodeSchema } from "./program-region.schema";
 
 export const eligibilityRuleContentShape = {
   displayOrder: z.number().int().nonnegative(),
@@ -46,31 +47,23 @@ export const ageConditionSchema = z
     }
   });
 
-export const regionConditionSchema = z
-  .object({
+export const regionConditionSchema = z.discriminatedUnion("coverage", [
+  z.object({
+    coverage: z.literal("NATIONAL"),
+    cityCode: z.null().optional(),
+    allowedDistrictCodes: z.undefined().optional(),
+  }).strict(),
+  z.object({
+    coverage: z.literal("CITY_WIDE"),
     cityCode: z.literal("26000"),
-    coverage: z.enum(["CITY_WIDE", "DISTRICT"]),
-    allowedDistrictCodes: z.array(z.string().regex(/^26\d{3}$/)).optional(),
-  })
-  .superRefine((value, context) => {
-    if (
-      value.coverage === "DISTRICT" &&
-      (!value.allowedDistrictCodes || value.allowedDistrictCodes.length === 0)
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["allowedDistrictCodes"],
-        message: "구·군 규칙에는 허용 지역 코드가 필요합니다.",
-      });
-    }
-    if (value.coverage === "CITY_WIDE" && value.allowedDistrictCodes?.length) {
-      context.addIssue({
-        code: "custom",
-        path: ["allowedDistrictCodes"],
-        message: "부산 전체 규칙에는 구·군 목록을 입력하지 않습니다.",
-      });
-    }
-  });
+    allowedDistrictCodes: z.undefined().optional(),
+  }).strict(),
+  z.object({
+    coverage: z.literal("DISTRICT"),
+    cityCode: z.literal("26000"),
+    allowedDistrictCodes: z.array(busanDistrictCodeSchema).min(1),
+  }).strict(),
+]);
 
 export const employmentConditionSchema = z.object({
   allowedStatuses: z

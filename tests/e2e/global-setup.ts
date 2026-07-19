@@ -64,6 +64,51 @@ export default async function globalSetup() {
       throw new Error("E2E 임시 관리자 생성 결과를 확인할 수 없습니다.");
     }
     id = admin.id;
+
+    const publicProgram = async (input: {
+      slug: string;
+      title: string;
+      status: "PUBLISHED" | "DRAFT" | "UNPUBLISHED";
+      category: "YOUTH_EMPLOYMENT" | "YOUTH_HOUSING";
+      ruleType: "AGE" | "MANUAL_REVIEW";
+      condition: object;
+      archived?: boolean;
+      national?: boolean;
+    }) => {
+      const programId = randomUUID();
+      const versionId = randomUUID();
+      const sourceId = randomUUID();
+      await client.query(
+        'INSERT INTO "SupportProgram" ("id","slug","category","managingOrganization","archivedAt","createdById","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,now(),now())',
+        [programId, input.slug, input.category, "부산광역시 E2E 기관", input.archived ? new Date() : null, id],
+      );
+      await client.query(
+        'INSERT INTO "ProgramVersion" ("id","programId","versionNumber","title","shortDescription","fullDescription","targetSummary","benefitType","amountType","applicationType","applicationMethod","applicationUrl","contactInformation","requiredDocuments","checkedAt","publicationStatus","publishedAt","createdById","createdAt","updatedAt") VALUES ($1,$2,1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16,$17,now(),now())',
+        [versionId,programId,input.title,"브라우저 테스트 전용 가상 지원제도","운영 데이터가 아닌 E2E 전용 공식 정보입니다.","부산 청년","서비스","UNDETERMINED","ALWAYS_OPEN","온라인","https://www.busan.go.kr/e2e-apply","E2E 문의",JSON.stringify([]),"2026-07-19",input.status,input.status==="PUBLISHED"?new Date():null,id],
+      );
+      await client.query(
+        'INSERT INTO "ProgramSource" ("id","programVersionId","sourceType","organizationName","documentTitle","sourceUrl","checkedAt","isPrimary","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,true,now(),now())',
+        [sourceId,versionId,"OFFICIAL_PAGE","부산광역시 E2E 기관","E2E 공식 안내",`https://www.busan.go.kr/${input.slug}`,"2026-07-19"],
+      );
+      await client.query(
+        'INSERT INTO "ProgramRegion" ("id","programVersionId","cityCode","districtCode","coverageType","reviewRequired") VALUES ($1,$2,$3,$4,$5,false)',
+        [randomUUID(),versionId,input.national?null:"26000",input.national?null:"ALL",input.national?"NATIONAL":"CITY_WIDE"],
+      );
+      await client.query(
+        'INSERT INTO "EligibilityRule" ("id","programVersionId","ruleType","displayOrder","label","description","expectedCondition","required","reviewRequired","missingValueBehavior","passMessage","failureMessage","unknownMessage","sourceId","sourceLocation","active","createdAt","updatedAt") VALUES ($1,$2,$3,1,$4,$5,$6::jsonb,true,$7,$8,$9,$10,$11,$12,$13,true,now(),now())',
+        [randomUUID(),versionId,input.ruleType,"E2E 자격 규칙",input.ruleType==="AGE"?"연령 조건":"기관 확인 조건",JSON.stringify(input.condition),input.ruleType==="MANUAL_REVIEW","UNKNOWN","조건을 충족합니다.","조건을 충족하지 않습니다.","공식 기관 확인이 필요합니다.",sourceId,"지원 대상"],
+      );
+      await client.query('UPDATE "SupportProgram" SET "currentPublishedVersionId"=$1 WHERE "id"=$2',[versionId,programId]);
+    };
+    const seed = Date.now();
+    const eligibleSlug = `e2e-public-eligible-${seed}`;
+    await publicProgram({slug:eligibleSlug,title:"E2E 취업 신청 가능 제도",status:"PUBLISHED",category:"YOUTH_EMPLOYMENT",ruleType:"AGE",condition:{minimumAge:19,maximumAge:34,referenceDate:"APPLICATION_DATE"},national:true});
+    await publicProgram({slug:`e2e-public-review-${seed}`,title:"E2E 주거 추가 확인 제도",status:"PUBLISHED",category:"YOUTH_HOUSING",ruleType:"MANUAL_REVIEW",condition:{reviewPrompt:"기관 확인 필요"}});
+    await publicProgram({slug:`e2e-public-fail-${seed}`,title:"E2E 연령 미충족 제도",status:"PUBLISHED",category:"YOUTH_EMPLOYMENT",ruleType:"AGE",condition:{minimumAge:50,referenceDate:"APPLICATION_DATE"}});
+    await publicProgram({slug:`e2e-public-draft-${seed}`,title:"E2E 비공개 DRAFT",status:"DRAFT",category:"YOUTH_EMPLOYMENT",ruleType:"AGE",condition:{minimumAge:19,maximumAge:34,referenceDate:"APPLICATION_DATE"}});
+    await publicProgram({slug:`e2e-public-unpublished-${seed}`,title:"E2E 비공개 이력",status:"UNPUBLISHED",category:"YOUTH_EMPLOYMENT",ruleType:"AGE",condition:{minimumAge:19,maximumAge:34,referenceDate:"APPLICATION_DATE"}});
+    await publicProgram({slug:`e2e-public-archived-${seed}`,title:"E2E 보관 제도",status:"PUBLISHED",category:"YOUTH_EMPLOYMENT",ruleType:"AGE",condition:{minimumAge:19,maximumAge:34,referenceDate:"APPLICATION_DATE"},archived:true});
+    process.env.E2E_PUBLIC_ELIGIBLE_SLUG = eligibleSlug;
   } finally {
     await client.end();
   }

@@ -15,6 +15,73 @@ function validationError(message: string, details?: unknown): never {
   throw new DomainError("VALIDATION_ERROR", message, details);
 }
 
+export type ValidatableProgramRegion = {
+  coverageType: "NATIONAL" | "CITY_WIDE" | "DISTRICT";
+  cityCode: string | null;
+  districtCode: string | null;
+  reviewRequired: boolean;
+  requirementNote?: string | null;
+};
+
+export function assertValidProgramRegions(
+  regions: ValidatableProgramRegion[],
+): void {
+  const coverageTypes = new Set(regions.map(({ coverageType }) => coverageType));
+  if (coverageTypes.size > 1) {
+    throw new DomainError(
+      "REGION_CONFLICT",
+      "전국, 부산 전체, 개별 구·군 범위를 서로 혼합할 수 없습니다.",
+    );
+  }
+
+  const regionKeys = new Set<string>();
+  for (const region of regions) {
+    if (region.coverageType === "NATIONAL") {
+      if (region.cityCode !== null || region.districtCode !== null) {
+        throw new DomainError(
+          "REGION_CONFLICT",
+          "부산 거주 필수가 아닌 범위에는 도시·구·군 코드를 입력하지 않습니다.",
+        );
+      }
+    } else {
+      if (region.cityCode !== BUSAN_CITY_CODE) {
+        validationError("부산광역시 지역 코드만 허용합니다.");
+      }
+      if (region.coverageType === "CITY_WIDE" && region.districtCode !== "ALL") {
+        throw new DomainError(
+          "REGION_CONFLICT",
+          "부산 전체 지역의 districtCode는 ALL이어야 합니다.",
+        );
+      }
+      if (
+        region.coverageType === "DISTRICT" &&
+        (!region.districtCode || !busanDistrictCodeSet.has(region.districtCode))
+      ) {
+        validationError("허용되지 않은 부산 구·군 코드입니다.");
+      }
+    }
+
+    if (region.reviewRequired && !region.requirementNote?.trim()) {
+      validationError("추가 확인 지역에는 확인 메모가 필요합니다.");
+    }
+
+    const key = `${region.coverageType}:${region.cityCode ?? "NULL"}:${region.districtCode ?? "NULL"}`;
+    if (regionKeys.has(key)) validationError("중복된 적용 지역이 있습니다.");
+    regionKeys.add(key);
+  }
+}
+
+export function hasValidProgramRegions(
+  regions: ValidatableProgramRegion[],
+): boolean {
+  try {
+    assertValidProgramRegions(regions);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function parseDraftProgramConfiguration(
   input: UpdateDraftProgramConfigurationInput,
 ): ParsedDraftProgramConfiguration {
@@ -36,27 +103,7 @@ export function parseDraftProgramConfiguration(
     validationError("중복된 문서 식별자가 있습니다.");
   }
 
-  const cityWide = value.regions.some(({ coverageType }) => coverageType === "CITY_WIDE");
-  const district = value.regions.some(({ coverageType }) => coverageType === "DISTRICT");
-  if (cityWide && district) {
-    throw new DomainError("REGION_CONFLICT", "부산 전체와 개별 구·군을 동시에 등록할 수 없습니다.");
-  }
-  const regionKeys = new Set<string>();
-  for (const region of value.regions) {
-    if (region.cityCode !== BUSAN_CITY_CODE) validationError("부산광역시 지역 코드만 허용합니다.");
-    if (region.coverageType === "CITY_WIDE" && region.districtCode !== "ALL") {
-      throw new DomainError("REGION_CONFLICT", "부산 전체 지역의 districtCode는 ALL이어야 합니다.");
-    }
-    if (region.coverageType === "DISTRICT" && !busanDistrictCodeSet.has(region.districtCode)) {
-      validationError("허용되지 않은 부산 구·군 코드입니다.");
-    }
-    if (region.reviewRequired && !region.requirementNote) {
-      validationError("추가 확인 지역에는 확인 메모가 필요합니다.");
-    }
-    const key = `${region.cityCode}:${region.districtCode}`;
-    if (regionKeys.has(key)) validationError("중복된 적용 지역이 있습니다.");
-    regionKeys.add(key);
-  }
+  assertValidProgramRegions(value.regions);
 
   const orders = value.rules.map(({ displayOrder }) => displayOrder);
   if (!orders.includes(1)) validationError("규칙 displayOrder는 1부터 시작해야 합니다.");

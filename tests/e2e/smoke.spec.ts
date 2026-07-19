@@ -12,7 +12,7 @@ test("조건 입력 UI 골격을 표시한다", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "나에게 필요한 지원 분야를 알려주세요",
   );
-  await expect(page.getByRole("button", { name: "다음 단계" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "다음" })).toBeEnabled();
 });
 
 test("관리자 로그인 폼을 표시한다", async ({ page }) => {

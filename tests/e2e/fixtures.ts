@@ -6,6 +6,7 @@ export const test = base.extend<{ browserErrorGuard: void }>({
   browserErrorGuard: [
     async ({ page }, use) => {
       const browserErrors: string[] = [];
+      let receivedExpectedMissingQuestionnaireResponse = false;
 
       page.on("console", (message) => {
         if (message.type() === "error") {
@@ -22,7 +23,13 @@ export const test = base.extend<{ browserErrorGuard: void }>({
         const isExpectedInvalidLogin =
           response.status() === 401 &&
           url.pathname === "/api/admin/auth/login";
-        if (!isExpectedInvalidLogin) {
+        const isExpectedMissingQuestionnaire =
+          response.status() === 400 &&
+          url.pathname === "/api/recommendations/evaluate";
+        if (isExpectedMissingQuestionnaire) {
+          receivedExpectedMissingQuestionnaireResponse = true;
+        }
+        if (!isExpectedInvalidLogin && !isExpectedMissingQuestionnaire) {
           browserErrors.push(
             `http: ${response.status()} ${response.request().method()} ${url.pathname}`,
           );
@@ -31,9 +38,19 @@ export const test = base.extend<{ browserErrorGuard: void }>({
 
       await use();
 
-      expect(browserErrors, "브라우저 또는 HTTP 오류가 없어야 합니다.").toEqual(
-        [],
-      );
+      const unexpectedBrowserErrors = browserErrors.filter((error) => {
+        const isExpectedResourceError =
+          receivedExpectedMissingQuestionnaireResponse &&
+          error ===
+            "console: Failed to load resource: the server responded with a status of 400 (Bad Request)";
+
+        return !isExpectedResourceError;
+      });
+
+      expect(
+        unexpectedBrowserErrors,
+        "브라우저 또는 HTTP 오류가 없어야 합니다.",
+      ).toEqual([]);
     },
     { auto: true },
   ],
