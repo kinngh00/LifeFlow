@@ -1,0 +1,352 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProgramCategory {
+  YOUTH_EMPLOYMENT
+  YOUTH_HOUSING
+}
+
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+  ARCHIVED
+}
+
+enum SourceType {
+  OFFICIAL_PAGE
+  PUBLIC_NOTICE
+  ATTACHMENT
+}
+
+enum RegionCoverageType {
+  CITY_WIDE
+  DISTRICT
+}
+
+enum RuleType {
+  AGE
+  REGION
+  EMPLOYMENT
+  STUDENT
+  INCOME_BAND
+  HOUSING
+  APPLICATION_PERIOD
+  MANUAL_REVIEW
+}
+
+enum RuleOutcome {
+  PASS
+  FAIL
+  UNKNOWN
+}
+
+enum EligibilityStatus {
+  ELIGIBLE
+  NEEDS_REVIEW
+  NOT_ELIGIBLE
+  UNDETERMINED
+}
+
+enum ApplicationType {
+  FIXED_PERIOD
+  ALWAYS_OPEN
+  BUDGET_EXHAUSTION
+}
+
+enum AmountType {
+  FIXED
+  RANGE
+  MAXIMUM
+  FORMULA
+  IN_KIND
+  UNDETERMINED
+}
+
+enum PublicationEventType {
+  PUBLISHED
+  UNPUBLISHED
+  VERSION_REPLACED
+  ARCHIVED
+}
+
+enum AdminAuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  TEST_RUN
+  PUBLISH
+  UNPUBLISH
+  ARCHIVE
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  displayName  String
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  supportProgramsCreated     SupportProgram[]   @relation("SupportProgramCreatedBy")
+  programVersionsCreated     ProgramVersion[]   @relation("ProgramVersionCreatedBy")
+  ruleTestCasesCreated       RuleTestCase[]     @relation("RuleTestCaseCreatedBy")
+  ruleTestRunsExecuted       RuleTestRun[]      @relation("RuleTestRunExecutedBy")
+  publicationEventsPerformed PublicationEvent[] @relation("PublicationEventPerformedBy")
+  auditLogs                  AdminAuditLog[]
+  adminSessions              AdminSession[]
+
+  @@index([active])
+}
+
+model AdminSession {
+  id          String    @id @default(cuid())
+  adminUserId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime  @default(now())
+  revokedAt   DateTime?
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Restrict)
+
+  @@index([expiresAt])
+  @@index([adminUserId, revokedAt, expiresAt])
+}
+
+model SupportProgram {
+  id                        String          @id @default(cuid())
+  slug                      String          @unique
+  category                  ProgramCategory
+  managingOrganization      String
+  operatingOrganization     String?
+  currentPublishedVersionId String?         @unique
+  archivedAt                DateTime?
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  createdById               String
+
+  createdBy               AdminUser        @relation("SupportProgramCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  currentPublishedVersion ProgramVersion?  @relation("CurrentPublishedVersion", fields: [currentPublishedVersionId], references: [id], onDelete: SetNull)
+  versions                ProgramVersion[] @relation("ProgramVersions")
+
+  @@index([category, archivedAt])
+  @@index([createdById])
+}
+
+model ProgramVersion {
+  id                   String            @id @default(cuid())
+  programId            String
+  versionNumber        Int
+  title                String
+  shortDescription     String
+  fullDescription      String
+  targetSummary        String
+  benefitType          String
+  amountType           AmountType
+  minimumAmount        Decimal?          @db.Decimal(15, 2)
+  maximumAmount        Decimal?          @db.Decimal(15, 2)
+  amountUnit           String?
+  amountDescription    String?
+  applicationType      ApplicationType
+  applicationStartDate DateTime?         @db.Date
+  applicationEndDate   DateTime?         @db.Date
+  applicationMethod    String
+  applicationUrl       String?
+  contactInformation   String
+  requiredDocuments    Json              @default("[]")
+  cautionText          String?
+  checkedAt            DateTime          @db.Date
+  reviewedAt           DateTime?         @db.Date
+  reviewDueAt          DateTime?         @db.Date
+  publicationStatus    PublicationStatus @default(DRAFT)
+  publishedAt          DateTime?
+  supersedesVersionId  String?
+  createdById          String
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  program                      SupportProgram     @relation("ProgramVersions", fields: [programId], references: [id], onDelete: Restrict)
+  currentForProgram            SupportProgram?    @relation("CurrentPublishedVersion")
+  supersedesVersion            ProgramVersion?    @relation("VersionSupersession", fields: [supersedesVersionId], references: [id], onDelete: SetNull)
+  successorVersions            ProgramVersion[]   @relation("VersionSupersession")
+  createdBy                    AdminUser          @relation("ProgramVersionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  sources                      ProgramSource[]
+  regions                      ProgramRegion[]
+  eligibilityRules             EligibilityRule[]
+  ruleTestCases                RuleTestCase[]
+  ruleTestRuns                 RuleTestRun[]
+  publicationEvents            PublicationEvent[] @relation("VersionPublicationEvents")
+  previousForPublicationEvents PublicationEvent[] @relation("PreviousPublishedVersion")
+
+  @@unique([programId, versionNumber])
+  @@index([publicationStatus, publishedAt])
+  @@index([applicationStartDate, applicationEndDate])
+  @@index([createdById])
+  @@index([supersedesVersionId])
+}
+
+model ProgramSource {
+  id                 String     @id @default(cuid())
+  programVersionId   String
+  sourceType         SourceType
+  organizationName   String
+  documentTitle      String
+  sourceUrl          String
+  documentIdentifier String?
+  publishedAt        DateTime?  @db.Date
+  checkedAt          DateTime   @db.Date
+  isPrimary          Boolean    @default(false)
+  note               String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  programVersion   ProgramVersion    @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+  eligibilityRules EligibilityRule[] @relation("RuleSource")
+
+  @@index([programVersionId])
+  @@index([sourceType])
+}
+
+model ProgramRegion {
+  id               String             @id @default(cuid())
+  programVersionId String
+  cityCode         String
+  districtCode     String             @default("ALL")
+  coverageType     RegionCoverageType
+  reviewRequired   Boolean            @default(false)
+  requirementNote  String?
+
+  programVersion ProgramVersion @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([programVersionId, cityCode, districtCode])
+  @@index([cityCode, districtCode])
+}
+
+model EligibilityRule {
+  id                   String      @id @default(cuid())
+  programVersionId     String
+  ruleType             RuleType
+  displayOrder         Int
+  label                String
+  description          String
+  expectedCondition    Json
+  required             Boolean     @default(true)
+  reviewRequired       Boolean     @default(false)
+  missingValueBehavior RuleOutcome @default(UNKNOWN)
+  passMessage          String
+  failureMessage       String
+  unknownMessage       String
+  sourceId             String?
+  sourceLocation       String?
+  active               Boolean     @default(true)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  programVersion ProgramVersion @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+  source         ProgramSource? @relation("RuleSource", fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@unique([programVersionId, displayOrder])
+  @@index([programVersionId, ruleType, active])
+  @@index([sourceId])
+}
+
+model RuleTestCase {
+  id                    String            @id @default(cuid())
+  programVersionId      String
+  name                  String
+  description           String?
+  inputSnapshot         Json
+  expectedOverallStatus EligibilityStatus
+  expectedRuleOutcomes  Json              @default("{}")
+  requiredForPublish    Boolean           @default(true)
+  createdById           String
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  programVersion ProgramVersion   @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+  createdBy      AdminUser        @relation("RuleTestCaseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  results        RuleTestResult[]
+
+  @@unique([programVersionId, name])
+  @@index([createdById])
+}
+
+model RuleTestRun {
+  id                String   @id @default(cuid())
+  programVersionId  String
+  executedById      String
+  executedAt        DateTime @default(now())
+  configurationHash String
+  totalCount        Int
+  passedCount       Int
+  failedCount       Int
+  overallPassed     Boolean
+
+  programVersion ProgramVersion   @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+  executedBy     AdminUser        @relation("RuleTestRunExecutedBy", fields: [executedById], references: [id], onDelete: Restrict)
+  results        RuleTestResult[]
+
+  @@index([programVersionId, executedAt])
+  @@index([executedById])
+}
+
+model RuleTestResult {
+  id                   String            @id @default(cuid())
+  testRunId            String
+  testCaseId           String
+  expectedStatus       EligibilityStatus
+  actualStatus         EligibilityStatus
+  passed               Boolean
+  failureDetail        String?
+  evaluatedRuleResults Json              @default("[]")
+
+  testRun  RuleTestRun  @relation(fields: [testRunId], references: [id], onDelete: Restrict)
+  testCase RuleTestCase @relation(fields: [testCaseId], references: [id], onDelete: Restrict)
+
+  @@unique([testRunId, testCaseId])
+  @@index([testCaseId])
+}
+
+model PublicationEvent {
+  id                         String               @id @default(cuid())
+  programVersionId           String
+  eventType                  PublicationEventType
+  performedById              String
+  performedAt                DateTime             @default(now())
+  reason                     String?
+  previousPublishedVersionId String?
+  configurationHash          String
+
+  programVersion           ProgramVersion  @relation("VersionPublicationEvents", fields: [programVersionId], references: [id], onDelete: Restrict)
+  previousPublishedVersion ProgramVersion? @relation("PreviousPublishedVersion", fields: [previousPublishedVersionId], references: [id], onDelete: SetNull)
+  performedBy              AdminUser       @relation("PublicationEventPerformedBy", fields: [performedById], references: [id], onDelete: Restrict)
+
+  @@index([programVersionId, performedAt])
+  @@index([previousPublishedVersionId])
+  @@index([performedById])
+}
+
+model AdminAuditLog {
+  id              String           @id @default(cuid())
+  adminUserId     String
+  action          AdminAuditAction
+  entityType      String
+  entityId        String
+  changeSummary   Json?
+  occurredAt      DateTime         @default(now())
+  requestMetadata Json?
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Restrict)
+
+  @@index([adminUserId, occurredAt])
+  @@index([entityType, entityId])
+}

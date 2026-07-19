@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lifeflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lifeflow
+      POSTGRES_USER: lifeflow
+      POSTGRES_PASSWORD: lifeflow
+    ports:
+      - "5433:5432"
+    volumes:
+      - lifeflow-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeflow -d lifeflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: lifeflow-postgres-test
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: lifeflow_test
+      POSTGRES_USER: lifeflow_test
+      POSTGRES_PASSWORD: lifeflow_test
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeflow_test -d lifeflow_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  lifeflow-postgres-data:
