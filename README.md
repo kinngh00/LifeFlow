@@ -162,7 +162,7 @@ E2E도 같은 안전 조건을 확인하고, 적용된 Prisma 마이그레이션
 
 ### 표준 PostgreSQL 검증 결과
 
-2026-07-19 기준, loopback 전용 PostgreSQL 18 테스트 DB에서 누적 마이그레이션 3개, 단위 테스트 197건, 통합 테스트 172건과 Playwright E2E 12건을 통과했습니다. GitHub Actions에서도 PostgreSQL service, migration, lint, typecheck, 단위·통합 테스트, production build와 Chromium E2E가 모두 통과했습니다.
+2026-07-19 기준, loopback 전용 PostgreSQL 18 테스트 DB에서 누적 마이그레이션 3개, 단위 테스트 199건, 통합 테스트 172건과 Playwright E2E 12건을 통과했습니다. GitHub Actions에서도 PostgreSQL service, migration, lint, typecheck, 단위·통합 테스트, production build와 Chromium E2E가 모두 통과했습니다.
 
 ## 검증 명령
 
@@ -198,6 +198,8 @@ Playwright 브라우저가 설치되지 않은 환경에서는 최초 한 번 `n
 
 - 비회원 사용자 조건은 PostgreSQL에 저장하지 않습니다.
 - 공식 데이터가 없는 더미 지원제도를 실제 데이터처럼 노출하지 않습니다.
+- 검수 데이터 입력은 기존 활성 ADMIN 이메일을 `LIFEFLOW_DATA_ADMIN_EMAIL`로 지정한 뒤 `npm run data:import:first`로 DRAFT·테스트·readiness까지만 수행합니다. 게시까지 진행할 때만 명시적으로 `-- --publish`를 붙입니다.
+- 2026-07-19 첫 검수 배치 5개는 로컬 개발 PostgreSQL에서 각 5건의 규칙 테스트와 readiness를 통과해 게시됐습니다. 이는 개발 DB 검증 결과이며 운영 배포를 의미하지 않습니다.
 - 사용자 결과 상태는 `ELIGIBLE`, `NEEDS_REVIEW`, `NOT_ELIGIBLE`, `UNDETERMINED`만 사용합니다.
 - 지원제도 생성 시 현재 게시 버전은 비어 있으며 최초 버전은 항상 DRAFT입니다.
 - 게시된 버전은 직접 편집하지 않고 새 DRAFT를 생성해 다시 테스트하고 게시합니다.
@@ -206,7 +208,7 @@ Playwright 브라우저가 설치되지 않은 환경에서는 최초 한 번 `n
 
 - 지원제도 삭제와 보관 처리
 - AI 설명 기능
-- 공식 검수 완료 전 실제 지원제도 일괄 입력
+- 공식 검수 완료 전 나머지 지원제도 일괄 입력
 - 사용자 조건의 영구 저장
 - 운영 배포
 
@@ -214,4 +216,4 @@ Playwright 브라우저가 설치되지 않은 환경에서는 최초 한 번 `n
 
 초기 MVP는 AI-Native 방식으로 빠르게 구축한 뒤 초기 커밋과 기반 완성 커밋으로 정리했습니다. 이후 실제 데이터 검수, CI 수정과 배포 과정은 변경 목적별 커밋으로 기록합니다.
 
-다음 단계는 공식 출처가 확정된 5개 제도를 DRAFT로 입력하고, 제도별 테스트 5건·readiness·공개 추천과 상세를 검증한 뒤 게시하는 것입니다. 첫 배치에서 구조 문제가 없을 때만 다음 배치로 진행합니다.
+다음 단계는 첫 검수 배치에서 확인한 구조를 유지하면서 나머지 후보를 5개 이하 배치로 공식 검수하는 것입니다. 공식 공고의 지역·기간·금액을 확정하지 못한 제도는 DRAFT 입력이나 게시에서 제외합니다.
